@@ -4,6 +4,8 @@ AI agent with browser automation - uses your existing Chrome browser with all yo
 
 ## Quick Start
 
+First update the `.env` file with `OPENAI_API_KEY`. Then run the following.
+
 ```bash
 # Install dependencies
 uv sync
