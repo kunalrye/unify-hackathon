@@ -4,7 +4,9 @@ AI agent with browser automation - uses your existing Chrome browser with all yo
 
 ## Quick Start
 
-First update the `.env` file with `OPENAI_API_KEY`. Then run the following.
+First update the `.env` file with `OPENAI_API_KEY`. 
+Update the `resume.txt` or `resume.pdf` files with your own resume, adjust the job posting you want to apply for, and adjust the prompts in `planning_agent.py` or `computer_agent.py` to craft the best cold email for the job you want to apply for.
+Now you can run the following.
 
 ```bash
 # Install dependencies
@@ -16,10 +18,6 @@ uv sync
 # To run the Agents
 uv run -m specialized_agents.planning_agent
 ```
-
-## TODOs
-
-Update the resume.txt or resume.pdf files with your own resume, adjust the job posting you want to apply for, and adjust the prompts in `planning_agent.py` or `computer_agent.py` to craft the best cold email for the job you want to apply for.
 
 ## Details
 
