@@ -12,8 +12,12 @@ uv sync
 ./start_chrome_debug.sh
 
 # To run the Agents
-uv run specialized_agents/planning_agent.py
+uv run -m specialized_agents.planning_agent
 ```
+
+## TODOs
+
+Update the resume.txt or resume.pdf files with your own resume, adjust the job posting you want to apply for, and adjust the prompts in `planning_agent.py` or `computer_agent.py` to craft the best cold email for the job you want to apply for.
 
 ## Details
 

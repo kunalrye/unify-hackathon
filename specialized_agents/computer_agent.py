@@ -7,13 +7,9 @@ from agents import (
     Runner,
     function_tool,
 )
-from dotenv import load_dotenv
 
 from computers.default import LocalPlaywrightBrowser
-
-load_dotenv()
-
-default_model = "computer-use-preview"
+from .constants import COMPUTER_MODEL
 
 
 @function_tool(name_override="navigate_to_url")
@@ -50,6 +46,7 @@ async def open_in_new_tab(ctx: RunContextWrapper, url: str) -> str:
     return await pc._page.title()
 
 
+
 async def build_computer_agent() -> tuple[Agent, AsyncComputer]:
     computer: AsyncComputer = LocalPlaywrightBrowser()
     await computer.__aenter__()
@@ -74,6 +71,6 @@ async def build_computer_agent() -> tuple[Agent, AsyncComputer]:
             truncation="auto",
             parallel_tool_calls=False,
         ),
-        model=default_model,
+        model=COMPUTER_MODEL,
     )
     return agent, computer

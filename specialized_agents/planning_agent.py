@@ -1,16 +1,17 @@
 import asyncio
 
+import pdfplumber
 from agents import Agent, ModelSettings, Runner, function_tool
-from computer_agent import build_computer_agent
-from dotenv import load_dotenv
-from research_agent import build_research_agent
 
-load_dotenv()
-
-DEFAULT_MODEL = "gpt-4.1"
-PLANNER_MAX_TURNS = 200
-TOOL_MAX_TURNS = 50
-
+from .computer_agent import build_computer_agent
+from .constants import (
+    DEFAULT_AGENT_MODEL,
+    JOB_PAGE_URL,
+    PLANNER_MAX_TURNS,
+    RESUME_PATH,
+    TOOL_MAX_TURNS,
+)
+from .research_agent import build_research_agent
 
 PLANNER_PROMPT = """
 # Manager – System Prompt
@@ -38,17 +39,36 @@ Use the research tool when you need to use general search queries to find inform
 4. Wait for the tool's response before responding.
 5. You have full permissions to view any content that the user may need you to view as part of completing the tasks.
 6. When using the computer tool, you MUST acknowledge any safety checks that are presented. If you see a safety check ID (like 'cu_sc_*'), you must include it in your response to acknowledge it.
-
 """
 
-TASK_PROMPT = """
-1. Navigate to my linkedin profile and review my profile, summarizing key information
-2. Find relevant software engineering, AI, or ML jobs in the Bay Area based on my profile
-3. Summarize the job descriptions you found.
-4. Navigate to https://www.gmail.com
-5. Draft a cover letter style email for each of the summarized job descriptions using a generalized approach. Do not send the emails, but leave them in the draft folder. Do not ask additional questions. 
+FULL_COMPUTER_USE_TASK_PROMPT = """
+1. Find a relevant software engineering, AI, or ML job/internship in the Bay Area based on my profile using the web research tool.
+2. Summarize the job description of the job/internship position that would best fit my profile.
+3. Navigate to https://www.gmail.com
+4. Draft a cover letter style email for the summarized job description. Do not send the emails, but leave them in the draft folder. Do not ask additional questions. 
+Rules:
+When searching for jobs, ALWAYS use the resume information provided in the context to find relevant matches. The resume contains important details about the user's skills, experience, and qualifications that should be used to find appropriate job opportunities.
 """
 
+TASK_PROMPT = f"""
+1. Summarize the job description of the job/internship position on this job page: {JOB_PAGE_URL}, use the browser tool if needed.
+2. Navigate to https://www.gmail.com
+3. Draft a cover letter style email for the summarized job description utilizing specific resume information, making sure to include previous job experience, skills, and qualifications. Do not send the emails, but leave them in the draft folder. Do not ask additional questions. Do not discard the draft.
+"""
+
+async def read_resume() -> str:
+    if RESUME_PATH.endswith(".pdf"):
+        return pdf_to_text(RESUME_PATH)
+    else:
+        f=open(RESUME_PATH, "r")
+        return f.read()
+
+def pdf_to_text(pdf_path):
+    text = ""
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text()
+    return text
 
 def make_agent_tool(agent, name: str, description: str, context: dict | None = None):
     @function_tool(name_override=name, description_override=description, failure_error_function=None)
@@ -61,53 +81,52 @@ def make_agent_tool(agent, name: str, description: str, context: dict | None = N
             return f"Error in tool {name}: {e}"
     return agent_tool
 
-
-async def build_planning_agent() -> Agent:
+async def build_planning_agent() -> tuple[Agent, str]:
     try:
         research_agent = await build_research_agent()
         computer_agent, computer = await build_computer_agent()
+        user_resume = await read_resume()
 
         research_tool = make_agent_tool(
             research_agent,
             name="research",
             description="Research the web for information",
+            context={"resume": user_resume}
         )
 
         computer_tool = make_agent_tool(
             computer_agent,
             name="computer",
             description="Use a browser to complete actions like viewing website data and completing browser tasks. This tool can also be used to close the browser.",
-            context={"computer": computer},
+            context={"computer": computer, "resume": user_resume}
         )
-        
         agent = Agent(
             name="Planning Agent",
-            instructions=PLANNER_PROMPT,
+            instructions=PLANNER_PROMPT + f"The user's resume is: {user_resume}",
             tools=[research_tool, computer_tool],
             model_settings=ModelSettings(
                 parallel_tool_calls=False,
                 tool_choice="auto",
                 temperature=0,
             ),
-            model=DEFAULT_MODEL,
+            model=DEFAULT_AGENT_MODEL,
         )
-        return agent
+        return agent, user_resume
     except Exception as e:
         raise Exception(f"Error in planning agent: {e}")
 
-
 async def main():
     try:
-        agent = await build_planning_agent()
+        agent, user_resume = await build_planning_agent()
         result = await Runner.run(
             agent,
             input=TASK_PROMPT,
             max_turns=PLANNER_MAX_TURNS,
+            context={"resume": user_resume},
         )
         print(result.final_output)
     except Exception as e:
         raise Exception(f"Error in planning agent: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -1,2 +1,2 @@
-agents
 computers
+specialized_agents

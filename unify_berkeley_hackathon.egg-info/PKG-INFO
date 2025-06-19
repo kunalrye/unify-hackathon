@@ -16,3 +16,4 @@ Requires-Dist: pydantic_core==2.27.2
 Requires-Dist: python-dotenv==1.0.1
 Requires-Dist: tenacity~=9.0
 Requires-Dist: urllib3==2.3.0
+Requires-Dist: pdfplumber==0.11.7

@@ -1,12 +1,11 @@
 from typing import Literal
 
 from agents import Agent, ModelSettings, WebSearchTool
-from dotenv import load_dotenv
 
-load_dotenv()
+from .constants import DEFAULT_AGENT_MODEL
 
-default_model = "gpt-4.1"
 default_search_context: Literal["low", "medium", "high"] = "medium"
+
 
 async def build_research_agent() -> Agent:
     search_tool = WebSearchTool(search_context_size=default_search_context)
@@ -21,7 +20,7 @@ async def build_research_agent() -> Agent:
             tool_choice="required",
             temperature=0,
         ),
-        model=default_model,
+        model=DEFAULT_AGENT_MODEL,
     )
     return agent
 
